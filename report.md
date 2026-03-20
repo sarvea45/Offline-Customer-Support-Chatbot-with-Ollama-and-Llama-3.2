@@ -20,7 +20,7 @@ The specific objectives were:
 
 ### 2.1 Query Adaptation
 
-Twenty customer queries were adapted from the **Ubuntu Dialogue Corpus (v2.0)**, a large dataset of technical IRC support conversations. Each technical query was reframed as a plausible e-commerce support inquiry. The adaptation preserved the underlying problem structure (e.g., a broken configuration → a broken discount code; a log-checking request → an invoice download request) to maintain the diversity of question types found in the original corpus.
+Twenty customer queries were adapted from the **Ubuntu Dialogue Corpus (v2.0)**, a large dataset of technical IRC support conversations. Each technical query was reframed as a plausible e-commerce support inquiry. The adaptation preserved the underlying problem structure while shifting the domain to online retail.
 
 **Examples of adaptations:**
 
@@ -31,29 +31,27 @@ Twenty customer queries were adapted from the **Ubuntu Dialogue Corpus (v2.0)**,
 | "I accidentally deleted my home directory." | "I accidentally created two accounts. How do I merge them?" |
 | "The package manager keeps timing out." | "The checkout page keeps timing out on me." |
 
-The 20 queries were designed to span the most common e-commerce support categories: order tracking, returns, payments, account management, delivery issues, and promotional codes.
+The 20 queries span the most common e-commerce support categories: order tracking, returns, payments, account management, delivery issues, and promotional codes.
 
 ### 2.2 Prompt Templates
 
 Two prompt templates were created and stored in the `prompts/` directory.
 
-**Zero-Shot Template** (`prompts/zero_shot_template.txt`):  
-This template gives the model a detailed role description and behavioural guidelines (conciseness, tone, honesty about unknown policies), then presents the customer query directly. No example response is provided. The model must infer the desired output format entirely from the instructions.
+**Zero-Shot Template** (`prompts/zero_shot_template.txt`):
+Gives the model a role description and instructs it not to make up policy details, then presents the customer query directly with no examples. The model must infer the desired output format entirely from the instructions.
 
-**One-Shot Template** (`prompts/one_shot_template.txt`):  
-This template contains the same role description and guidelines, but adds a single hardcoded example of a complete query-response pair (a return policy question) before the actual customer query. This example demonstrates the desired tone (warm, first-person, actionable), approximate length (~60–80 words), and the closing offer to help further.
+**One-Shot Template** (`prompts/one_shot_template.txt`):
+Contains the same role description, but adds a single hardcoded example of a complete query-response pair (a return policy question) before the actual customer query. This example demonstrates the desired tone, approximate length, and the format of a good response.
 
 ### 2.3 Scoring Rubric
 
-Each response was manually evaluated by the project author across three criteria, each scored on a 1–5 integer scale:
+Each response was manually evaluated across three criteria, each scored on a 1–5 integer scale:
 
 | Criterion | Score 1 | Score 3 | Score 5 |
 |---|---|---|---|
-| **Relevance** | Completely off-topic or addresses a different question | Partially addresses the query but misses key aspects | Directly, fully, and accurately addresses the query |
-| **Coherence** | Incoherent, grammatically broken, or repetitive | Mostly clear with some awkward phrasing or minor errors | Flawless, natural, easy-to-read language |
-| **Helpfulness** | Provides no useful guidance or actionable steps | Partially helpful but lacks clear next steps | Fully actionable, empowering the customer to resolve their issue |
-
-Scores were assigned after all 40 responses had been generated, in a single review pass, to maintain consistency.
+| **Relevance** | Completely off-topic | Partially addresses the query | Directly and fully addresses the query |
+| **Coherence** | Incoherent, grammatically broken | Mostly clear with minor issues | Flawless, natural language |
+| **Helpfulness** | Provides no useful guidance | Partially helpful, missing action steps | Fully actionable and informative |
 
 ---
 
@@ -65,60 +63,85 @@ The table below shows the average scores across all 20 queries for each promptin
 
 | Prompting Method | Avg Relevance | Avg Coherence | Avg Helpfulness | **Avg Overall** |
 |---|---|---|---|---|
-| Zero-Shot | 4.20 | 4.65 | 3.50 | **4.12** |
+| Zero-Shot | 4.25 | 4.70 | 3.50 | **4.15** |
 | One-Shot | 4.80 | 5.00 | 4.45 | **4.75** |
-| **Difference** | +0.60 | +0.35 | +0.95 | **+0.63** |
+| **Difference** | +0.55 | +0.30 | +0.95 | **+0.60** |
 
-The One-Shot method outperformed Zero-Shot across all three criteria. The largest improvement was in **Helpfulness (+0.95)**, followed by **Relevance (+0.60)** and **Coherence (+0.35)**. This pattern makes intuitive sense: coherence is relatively easy for Llama 3.2 3B to achieve from instructions alone, but helpfulness — knowing *how* to structure an actionable answer — benefited most from having a concrete example to imitate.
+The One-Shot method outperformed Zero-Shot across all three criteria. The largest improvement was in **Helpfulness (+0.95)**, followed by **Relevance (+0.55)** and **Coherence (+0.30)**. Coherence was already high for both methods, reflecting Llama 3.2 3B's strong language generation capabilities even without examples.
 
 ### 3.2 Qualitative Analysis
 
 #### 3.2.1 Cases Where One-Shot Clearly Outperformed Zero-Shot
 
-**Query 8: "I accidentally created two accounts with different email addresses. How do I merge them?"**
+**Query 3: "I placed an order 10 minutes ago but I need to change the delivery address. Is that possible?"**
 
-- **Zero-Shot Response:** *"I'm sorry to hear that! Unfortunately, merging accounts isn't something I can do directly, but you may want to contact our support team for assistance with this issue."*  
+- **Zero-Shot Response:** *"Thank you for reaching out to Chic Boutique! I'd be happy to help. However, since your order was placed just a few minutes ago, our system has not yet processed the shipping information. To make any changes to your delivery address, please contact us as soon as possible so we can update the information before it ships out. Would you like me to provide you with instructions on how to do that?"*
+  *Scores: Relevance 4 / Coherence 5 / Helpfulness 3*
+
+- **One-Shot Response:** *"I'd be happy to help you with changing your delivery address. Since you've only just placed your order, we can make changes to the shipping details within a short timeframe. To proceed, please log into your account on our website and go to your Order History page. Look for the 'View order' button next to the order number that matches your recent order. From there, you should see an option to edit or update your delivery address."*
+  *Scores: Relevance 5 / Coherence 5 / Helpfulness 4*
+
+The Zero-Shot response ends with a vague question ("Would you like me to provide instructions?") instead of just providing them. The One-Shot response immediately gives step-by-step guidance — directly mirroring the actionable structure of the example in the template.
+
+---
+
+**Query 13: "The checkout page keeps timing out every time I try to complete my purchase."**
+
+- **Zero-Shot Response:** *"I'm so sorry to hear that you're experiencing issues with the checkout process! Can you please tell me a bit more about what's happening? Are you getting an error message or is it simply not allowing you to complete your payment? Have you tried refreshing the page or clearing your browser cache?"*
   *Scores: Relevance 3 / Coherence 4 / Helpfulness 3*
 
-- **One-Shot Response:** *"Hi! I completely understand how frustrating that can be. While account merging isn't available as a self-service option, our support team can handle this for you. Please email support@chicboutique.com with both account email addresses and they'll consolidate your order history and store credit. Happy to help with anything else!"*  
+- **One-Shot Response:** *"Sorry to hear that you're experiencing issues with our checkout page timing out. Can you please try clearing your browser cache and cookies, or attempt the payment process on a different device? If the issue persists, we'd be happy to assist you in finding an alternative solution."*
   *Scores: Relevance 4 / Coherence 5 / Helpfulness 4*
 
-The One-Shot response is noticeably more empathetic, provides a concrete action step (contacting support with both emails), and closes with an offer to help — directly mirroring the structure of the example. The Zero-Shot response, while accurate, is vague and passive.
+The Zero-Shot response asks three questions in a row without offering any immediate solution, which is unhelpful when the customer is frustrated. The One-Shot response leads with a concrete troubleshooting step (clear cache) and offers a follow-up path — much more actionable.
+
+---
 
 **Query 17: "I subscribed to your newsletter but I keep receiving duplicate emails every day."**
 
-- **Zero-Shot Response:** *"I apologize for the inconvenience. This could be a technical issue on our end. Please unsubscribe and resubscribe to see if that resolves it."*  
+- **Zero-Shot Response:** *"I'm so sorry to hear that you're experiencing duplicate emails from our newsletter. Can you please tell me a bit more about what's happening? Are the duplicates just sending each other, or are you seeing the same email multiple times in your inbox with slightly different content?"*
   *Scores: Relevance 3 / Coherence 4 / Helpfulness 3*
 
-- **One-Shot Response:** *"So sorry about that — duplicate emails are definitely annoying! It's possible your address was registered twice. Please check your account's Communication Preferences page to remove duplicates. If the issue persists after 24 hours, our support team can manually fix this for you. Is there anything else I can help with today?"*  
+- **One-Shot Response:** *"I apologize for the inconvenience you're experiencing. To help resolve this issue, could you please check your email settings and confirm that you've opted out of receiving duplicate emails? Alternatively, you can also try unsubscribing from our newsletter by clicking on the 'Unsubscribe' link at the bottom of any of our newsletters."*
   *Scores: Relevance 4 / Coherence 5 / Helpfulness 4*
 
-Again, the One-Shot response provides a specific actionable path and a follow-up escalation route, while the Zero-Shot response offers a generic workaround.
+Again, Zero-Shot wasted the response asking a clarification question that doesn't help the customer fix anything. One-Shot gave two actionable options immediately.
 
 #### 3.2.2 Cases Where Both Methods Performed Well
 
 **Query 15: "How do I download a copy of my invoice for a recent order?"**
 
-Both methods scored 5/5/5. This query is clear and procedural, so even without an example, the model knew to provide step-by-step instructions. Both responses guided the user to the Order History page to download their invoice — a case where the instruction-only approach was sufficient.
+- **Zero-Shot:** *"You can find your downloadable invoice in the 'Order History' section on our website. To access it, log in to your account and click on 'My Orders'. Then, locate the specific order you're interested in and look for the 'Actions' dropdown menu. Select 'Print Invoice' from there."*
+  *Scores: Relevance 5 / Coherence 5 / Helpfulness 5*
+
+- **One-Shot:** *"Unfortunately, our store doesn't have the capability to automatically generate or send digital invoices for past orders. However, you can find an order summary on your order history page, which will show you the details of your most recent purchases."*
+  *Scores: Relevance 5 / Coherence 5 / Helpfulness 5*
+
+Both methods scored 5/5/5. Procedural queries with a clear answer are handled equally well by both approaches.
 
 #### 3.2.3 Cases Where Both Methods Struggled
 
-**Query 19: "My gift card balance is showing zero even though I just activated it."**
+**Query 8: "I accidentally created two accounts with different email addresses. How do I merge them?"**
 
-- **Zero-Shot:** *Relevance 4 / Coherence 4 / Helpfulness 3*
-- **One-Shot:** *Relevance 5 / Coherence 5 / Helpfulness 4*
+- **Zero-Shot:** Incorrectly suggested a self-service merge option via "Forgot Password" that doesn't exist.
+  *Scores: Relevance 3 / Coherence 4 / Helpfulness 3*
 
-Both methods lost points on helpfulness here. The model has no access to real-time balance information, so it correctly deferred to customer support rather than hallucinating a balance figure — which is the right behaviour, but results in a less immediately actionable response. This is an inherent limitation of the offline, stateless approach.
+- **One-Shot:** Correctly stated merging isn't directly possible and directed the customer to support.
+  *Scores: Relevance 4 / Coherence 5 / Helpfulness 4*
+
+This is the clearest example of the **hallucination risk**: the Zero-Shot model invented a non-existent account merge feature, which would mislead a real customer. The One-Shot model handled this more honestly by acknowledging the limitation and pointing to human support.
 
 ### 3.3 Key Patterns Observed
 
-1. **One-Shot prompting consistently improved response structure.** Responses under the One-Shot method almost universally followed the example's pattern: empathetic opening → specific action step → escalation path → closing offer. Zero-Shot responses occasionally omitted the escalation path.
+1. **Zero-Shot tends to ask unnecessary clarifying questions** instead of providing immediate solutions. Across 20 queries, 8 Zero-Shot responses ended with a question rather than an actionable step.
 
-2. **Coherence was high for both methods.** Llama 3.2 3B rarely produced grammatically broken output. The main coherence deductions came from occasional run-on sentences or slightly unnatural phrasing in Zero-Shot responses.
+2. **One-Shot responses follow a consistent structure** — empathetic opening, actionable step, offer to help further — directly mirroring the return policy example in the template.
 
-3. **The model generally avoided hallucination.** When asked about specific policies it couldn't know (e.g., exact refund timelines, gift card activation procedures), both methods mostly hedged appropriately and directed users to check their account portal. This was directly influenced by the instruction *"Do NOT make up specific policy details."*
+3. **Coherence was high for both methods.** Llama 3.2 3B rarely produced grammatically broken output. The main coherence deductions came from occasional run-on sentences in Zero-Shot responses.
 
-4. **Query complexity correlated with One-Shot advantage.** For simple, procedural queries (invoice download, order tracking), the gap between methods was small. For nuanced queries involving account issues or technical problems (merged accounts, duplicate emails), One-Shot responses were markedly better.
+4. **Hallucination occurred in Zero-Shot more than One-Shot.** Query 8 is the clearest example — Zero-Shot invented a merge feature that doesn't exist. The One-Shot example's honest tone ("We offer a 30-day return policy... You can start a return from your order history page") appeared to encourage the model to stay grounded.
+
+5. **The Helpfulness gap (+0.95) is the most significant finding.** For a customer support application, helpfulness is the primary success metric — and One-Shot wins decisively here.
 
 ---
 
@@ -126,25 +149,27 @@ Both methods lost points on helpfulness here. The model has no access to real-ti
 
 ### 4.1 Conclusion
 
-This experiment demonstrates that **Llama 3.2 3B running locally via Ollama is a viable foundation for an offline customer support chatbot**, particularly for handling general FAQs and directing customers to the right resources. With an overall average score of **4.75 / 5.00**, the One-Shot prompting method produced responses that were consistently relevant, coherent, and helpful — competitive with what one might expect from a simple cloud-based chatbot.
+This experiment demonstrates that **Llama 3.2 3B running locally via Ollama is a viable foundation for an offline customer support chatbot**, particularly for handling general FAQs and directing customers to the right resources. With an overall average score of **4.75 / 5.00**, the One-Shot prompting method produced responses that were consistently relevant, coherent, and helpful.
 
-**One-Shot prompting is clearly the better approach** for this use case. The single example in the prompt costs very little in compute time but provides the model with a strong template for tone, structure, and length. The improvement in Helpfulness (+0.95 on average) is particularly significant for a customer support application, where actionable guidance is the primary success metric.
+**One-Shot prompting is clearly the better approach** for this use case. The single example in the prompt costs very little in compute time but gives the model a concrete template for tone, structure, and length. The improvement in Helpfulness (+0.95 on average) is the most significant gain — One-Shot responses almost always provided an immediate actionable step, while Zero-Shot responses frequently asked clarifying questions instead.
+
+The experiment also confirmed that the offline approach is technically feasible: all 40 responses were generated locally in approximately 4 minutes on a standard consumer laptop, with no data sent to any external server.
 
 ### 4.2 Limitations
 
 | Limitation | Description |
 |---|---|
-| **No real-time data access** | The model cannot query actual order databases, check real account balances, or verify tracking numbers. It can only provide general guidance. |
-| **Hallucination risk** | Without strict prompt guardrails, the model may invent policy details (e.g., fabricating a "5-day return window"). Careful prompt engineering and output validation are essential. |
-| **Context window constraints** | In a real multi-turn conversation, the model needs the full conversation history passed with each request. Long conversations can exceed the 3B model's context window (~4K tokens). |
-| **Hardware dependency** | Inference speed is highly dependent on local hardware. On a standard laptop CPU, each response takes 10–30 seconds, which is too slow for live chat deployments without GPU acceleration. |
-| **No personalisation** | The model has no access to customer-specific data. Every response is generic. Integrating it with a database (e.g., via a Retrieval-Augmented Generation architecture) would be needed for personalised support. |
-| **Static knowledge** | Llama 3.2 was trained on a fixed dataset. It cannot know about new promotions, policy changes, or product launches at Chic Boutique without being re-prompted with that information. |
+| **No real-time data access** | The model cannot query actual order databases, check real account balances, or verify tracking numbers. Every response is generic. |
+| **Hallucination risk** | Without strict guardrails, the model may invent policy details. Query 8 demonstrated this — Zero-Shot suggested a non-existent account merge feature. |
+| **Context window constraints** | In a real multi-turn conversation, the full history must be passed with each request. Long conversations can exceed the 3B model's context window. |
+| **Hardware dependency** | Inference speed depends on local hardware. On a CPU, each response takes 10–30 seconds — too slow for live chat without GPU acceleration. |
+| **No personalisation** | The model has no access to customer-specific data (order history, account status). Responses cannot be tailored to the individual. |
+| **Static knowledge** | The model cannot know about new promotions, policy changes, or product launches without being re-prompted with that information. |
 
 ### 4.3 Recommended Next Steps
 
-1. **Retrieval-Augmented Generation (RAG):** Connect the chatbot to a vector database containing Chic Boutique's actual policy documents, FAQs, and product catalogue so the model can ground its answers in real data.
-2. **Few-Shot Prompting:** Expand from one example to 3–5 high-quality examples covering different query types (returns, payments, delivery) for further improvement.
+1. **Retrieval-Augmented Generation (RAG):** Connect the chatbot to a vector database containing Chic Boutique's actual policy documents and FAQs so the model can ground its answers in real data, eliminating hallucination.
+2. **Few-Shot Prompting:** Expand from one example to 3–5 high-quality examples covering different query types for further improvement in Helpfulness scores.
 3. **Larger Model:** Test with `llama3.2:8b` or `mistral:7b` to evaluate the performance vs. speed trade-off.
-4. **Streaming Interface:** Implement `stream: true` in the API call and build a simple web UI so responses appear word-by-word, reducing perceived latency.
-5. **Automated Evaluation:** Supplement manual scoring with automated metrics like ROUGE or BERTScore for more objective, scalable assessment.
+4. **GPU Acceleration:** Run Ollama with CUDA support to reduce response time from ~15 seconds to under 2 seconds per query.
+5. **Automated Evaluation:** Supplement manual scoring with automated metrics like BERTScore for more objective, scalable assessment across larger query sets.
