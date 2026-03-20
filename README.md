@@ -39,6 +39,7 @@ Full setup instructions are in [setup.md](setup.md).
 ```
 chic-boutique-chatbot/
 ├── chatbot.py                  # Main script: generates & logs all responses
+├── data_preparation.py         # Dataset loading & query adaptation documentation
 ├── setup.md                    # Detailed installation guide
 ├── report.md                   # Full analysis report with results & conclusions
 ├── README.md                   # This file
@@ -55,7 +56,7 @@ chic-boutique-chatbot/
 
 | Method | Avg Relevance | Avg Coherence | Avg Helpfulness | **Overall** |
 |---|---|---|---|---|
-| Zero-Shot | 4.20 | 4.65 | 3.50 | **4.12 / 5** |
+| Zero-Shot | 4.25 | 4.70 | 3.50 | **4.15 / 5** |
 | One-Shot | 4.80 | 5.00 | 4.45 | **4.75 / 5** |
 
 - **One-Shot prompting outperforms Zero-Shot** across all three criteria, with the largest gain in **Helpfulness (+0.95)**.
@@ -73,7 +74,7 @@ See [report.md](report.md) for the full analysis.
 | LLM Runtime | [Ollama](https://ollama.com) |
 | Model | Meta Llama 3.2 3B (quantized) |
 | Language | Python 3.9+ |
-| Query Source | [Ubuntu Dialogue Corpus v2.0](https://huggingface.co/datasets/rguo12/ubuntu_dialogue_corpus) |
+| Query Source | [Ubuntu Dialogue QA](https://huggingface.co/datasets/sedthh/ubuntu_dialogue_qa) |
 | HTTP Client | `requests` |
 | Dataset Loader | `datasets` (Hugging Face) |
 
